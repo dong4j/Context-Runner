@@ -37,17 +37,17 @@
     "commands": [
       {
         "command": "context-runner.run",
-        "title": "%command.run%",
+        "title": "%context-runner.command.run%",
         "icon": "$(run)"
       },
       {
         "command": "context-runner.runFolder",
-        "title": "%command.runFolder%",
+        "title": "%context-runner.command.runFolder%",
         "icon": "$(run-folder)"
       },
       {
         "command": "context-runner.showLog",
-        "title": "%command.showLog%",
+        "title": "%context-runner.command.showLog%",
         "icon": "$(output)"
       }
     ],
@@ -84,17 +84,17 @@
         "context-runner.scriptPath": {
           "type": "string",
           "default": "",
-          "markdownDescription": "%config.scriptPath%"
+          "markdownDescription": "%context-runner.config.scriptPath%"
         },
         "context-runner.command": {
           "type": "string",
           "default": "",
-          "markdownDescription": "%config.command%"
+          "markdownDescription": "%context-runner.config.command%"
         },
         "context-runner.logEnabled": {
           "type": "boolean",
           "default": true,
-          "markdownDescription": "%config.logEnabled%"
+          "markdownDescription": "%context-runner.config.logEnabled%"
         },
         "context-runner.logLevel": {
           "type": "string",
@@ -105,7 +105,7 @@
             "info",
             "debug"
           ],
-          "markdownDescription": "%config.logLevel%"
+          "markdownDescription": "%context-runner.config.logLevel%"
         }
       }
     }
