@@ -44,7 +44,6 @@
     "menus": {
       "explorer/context": [
         {
-          "when": "resourceExtname =~ /\\.(png|jpg|jpeg|gif|webp)$/i",
           "command": "context-runner.run",
           "group": "navigation@1"
         },

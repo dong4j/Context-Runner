@@ -145,7 +145,7 @@ async function executeCommand(filePath, progress, current, total) {
     const command = config.get('command');
     
     if (!scriptPath && !command) {
-        showNotification(localize('error.noScriptPath'), 'error');
+        showNotification(localize('error.noConfig'), 'error');
         return;
     }
     
