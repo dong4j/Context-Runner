@@ -1,7 +1,7 @@
 {
     "context-runner.extension.description": "Run custom scripts or commands from context menu with progress and notifications",
-    "context-runner.config.scriptPath": "Path to the script file that will be executed",
-    "context-runner.config.command": "Command to execute. The file path will be automatically added as the last argument, or you can use {filePath} to specify its position",
+    "context-runner.config.scriptPath": "Path to the script file that will be executed. If both script and command are configured, script takes precedence",
+    "context-runner.config.command": "Command to execute when no script is configured. The file path will be automatically added as the last argument, or you can use {filePath} to specify its position",
     "context-runner.config.logEnabled": "Enable or disable logging",
     "context-runner.config.logLevel": "Set the logging level (error, warn, info, debug)",
     "context-runner.command.run": "Run Command",

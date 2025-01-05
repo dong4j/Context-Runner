@@ -1,7 +1,7 @@
 {
     "context-runner.extension.description": "通过右键菜单快速执行自定义脚本或命令，支持进度显示和通知",
-    "context-runner.config.scriptPath": "要执行的脚本文件路径",
-    "context-runner.config.command": "要执行的命令。文件路径会自动作为最后一个参数添加，或者你可以使用 {filePath} 指定其位置",
+    "context-runner.config.scriptPath": "要执行的脚本文件路径。如果同时配置了脚本和命令，优先执行脚本",
+    "context-runner.config.command": "当未配置脚本时要执行的命令。文件路径会自动作为最后一个参数添加，或者你可以使用 {filePath} 指定其位置",
     "context-runner.config.logEnabled": "启用或禁用日志",
     "context-runner.config.logLevel": "设置日志级别（error：错误，warn：警告，info：信息，debug：调试）",
     "context-runner.command.run": "执行命令",
