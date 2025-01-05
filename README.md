@@ -4,12 +4,12 @@
 
 ## 功能特点
 
-- 🚀 通过右键菜单快速执行命令
-- 📁 支持文件和文件夹操作
-- 📊 实时执行进度显示
-- 🌐 支持中英文界面
-- 🛠️ 支持自定义命令或脚本
-- 📝 详细的执行日志
+- 通过右键菜单快速执行命令
+- 支持文件和文件夹操作
+- 实时执行进度显示
+- 支持中英文界面
+- 支持自定义命令或脚本
+- 详细的执行日志
 
 ## 安装
 
@@ -162,101 +162,101 @@
    - 可以利用剪贴板集成
    - 考虑添加通知或提示
 
-## VS Code Extension Configuration
+## VS Code 插件配置说明
 
-The extension configuration in `package.json` contains several important sections that define how the extension works:
+`package.json` 文件是 VS Code 插件的核心配置文件，包含了多个重要部分：
 
-### Commands (`contributes.commands`)
+### 命令配置 (`contributes.commands`)
 
-Defines the commands that can be executed by users:
-
-```json
-{
-    "command": "context-runner.run",         // Command ID
-    "title": "%context-runner.command.run%", // Display name (supports i18n)
-    "icon": "$(run)"                        // Icon in UI
-}
-```
-
-### Menus (`contributes.menus`)
-
-Specifies where commands appear in VS Code's UI:
-
-- `explorer/context`: Right-click menu in file explorer
-  - `context-runner.run`: Shows for files
-  - `context-runner.runFolder`: Shows for folders
-- `commandPalette`: Command palette (Cmd/Ctrl+Shift+P)
-  - Commands are conditionally shown based on resource type
+定义用户可以执行的命令：
 
 ```json
 {
-    "when": "resourceScheme == file",     // Show only for files
-    "command": "context-runner.run",      // Command to execute
-    "group": "navigation"                 // Menu group
+    "command": "context-runner.run",         // 命令 ID
+    "title": "%context-runner.command.run%", // 显示名称（支持国际化）
+    "icon": "$(run)"                        // 界面图标
 }
 ```
 
-### Configuration (`contributes.configuration`)
+### 菜单配置 (`contributes.menus`)
 
-User-configurable settings:
+指定命令在 VS Code 界面中的显示位置：
+
+- `explorer/context`：文件资源管理器的右键菜单
+  - `context-runner.run`：文件的右键菜单项
+  - `context-runner.runFolder`：文件夹的右键菜单项
+- `commandPalette`：命令面板（Cmd/Ctrl+Shift+P）
+  - 命令根据资源类型条件显示
+
+```json
+{
+    "when": "resourceScheme == file",     // 仅对文件显示
+    "command": "context-runner.run",      // 要执行的命令
+    "group": "navigation"                 // 菜单分组
+}
+```
+
+### 用户设置 (`contributes.configuration`)
+
+用户可配置的选项：
 
 ```json
 {
     "context-runner.scriptPath": {
         "type": "string",
         "default": "",
-        "markdownDescription": "..."      // Description (supports i18n)
+        "markdownDescription": "..."      // 说明（支持国际化）
     }
 }
 ```
 
-Available settings:
-- `scriptPath`: Script file to execute (takes precedence over command)
-- `command`: Shell command to run when no script is configured
-- `logEnabled`: Enable/disable logging
-- `logLevel`: Set log detail level (error/warn/info/debug)
+可用设置：
+- `scriptPath`：要执行的脚本文件（优先级高于命令）
+- `command`：当未配置脚本时要执行的命令
+- `logEnabled`：启用/禁用日志
+- `logLevel`：设置日志级别（error/warn/info/debug）
 
-### Activation Events (`activationEvents`)
+### 激活事件 (`activationEvents`)
 
-Specifies when the extension should be activated:
+指定插件何时被激活：
 
 ```json
 "activationEvents": [
-    "onCommand:context-runner.run",       // Activate when command is invoked
+    "onCommand:context-runner.run",       // 当命令被调用时激活
     "onCommand:context-runner.runFolder",
     "onCommand:context-runner.showLog"
 ]
 ```
 
-### Language Support (`l10n`)
+### 语言支持 (`l10n`)
 
-Internationalization files:
-- `package.nls.json`: English strings
-- `package.nls.zh-cn.json`: Chinese strings
+国际化文件：
+- `package.nls.json`：英文字符串
+- `package.nls.zh-cn.json`：中文字符串
 
-Use `%key%` in package.json to reference localized strings.
+在 package.json 中使用 `%key%` 引用本地化字符串。
 
-### Icons and UI (`icon`, `badges`)
+### 图标和界面 (`icon`, `badges`)
 
-- `icon`: Extension icon in marketplace
-- `badges`: Marketplace badges (build status, version, etc.)
+- `icon`：插件在应用市场中的图标
+- `badges`：应用市场徽章（构建状态、版本等）
 
-### Development Settings
+### 开发设置
 
-For extension development:
-- `engines.vscode`: Compatible VS Code version
-- `scripts`: NPM scripts for packaging and publishing
-- `devDependencies`: Development tools and type definitions
+用于插件开发：
+- `engines.vscode`：兼容的 VS Code 版本
+- `scripts`：用于打包和发布的 NPM 脚本
+- `devDependencies`：开发工具和类型定义
 
-### Best Practices
+### 最佳实践
 
-1. Use semantic versioning for `version`
-2. Keep dependencies minimal
-3. Use clear, descriptive command names
-4. Provide meaningful command categories
-5. Include detailed configuration descriptions
-6. Support multiple languages through l10n
-7. Follow VS Code's UI/UX guidelines
+1. 使用语义化版本号
+2. 保持依赖最小化
+3. 使用清晰、描述性的命令名称
+4. 提供有意义的命令分类
+5. 包含详细的配置说明
+6. 通过 l10n 支持多语言
+7. 遵循 VS Code 的界面设计指南
 
 ## 开发指南
 
