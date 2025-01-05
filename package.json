@@ -7,13 +7,27 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/dong4j/context-runner"
+    "url": "https://github.com/dong4j/context-runner.git"
   },
+  "bugs": {
+    "url": "https://github.com/dong4j/context-runner/issues"
+  },
+  "homepage": "https://github.com/dong4j/context-runner#readme",
+  "galleryBanner": {
+    "color": "#C80000",
+    "theme": "dark"
+  },
+  "keywords": [
+    "context menu",
+    "command",
+    "script",
+    "runner",
+    "execute"
+  ],
   "engines": {
     "vscode": "^1.85.0"
   },
   "extensionKind": ["workspace", "ui"],
-  "enableProposedApi": false,
   "dependencies": {
     "iconv-lite": "^0.6.3"
   },
