@@ -23,34 +23,43 @@
       {
         "command": "context-runner.run",
         "title": "%command.run%",
-        "icon": {
-          "light": "resources/light/run.svg",
-          "dark": "resources/dark/run.svg"
-        }
+        "icon": "$(run)"
       },
       {
         "command": "context-runner.runFolder",
         "title": "%command.runFolder%",
-        "icon": {
-          "light": "resources/light/run-folder.svg",
-          "dark": "resources/dark/run-folder.svg"
-        }
+        "icon": "$(run-folder)"
       },
       {
         "command": "context-runner.showLog",
-        "title": "%command.showLog%"
+        "title": "%command.showLog%",
+        "icon": "$(output)"
       }
     ],
     "menus": {
       "explorer/context": [
         {
+          "when": "resourceScheme == file",
           "command": "context-runner.run",
-          "group": "navigation@1"
+          "group": "navigation"
         },
         {
           "when": "explorerResourceIsFolder",
           "command": "context-runner.runFolder",
-          "group": "navigation@2"
+          "group": "navigation"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "context-runner.run",
+          "when": "resourceScheme == file"
+        },
+        {
+          "command": "context-runner.runFolder",
+          "when": "explorerResourceIsFolder"
+        },
+        {
+          "command": "context-runner.showLog"
         }
       ]
     },
