@@ -24,16 +24,16 @@
         "command": "context-runner.run",
         "title": "%command.run%",
         "icon": {
-          "light": "resources/light/upload.svg",
-          "dark": "resources/dark/upload.svg"
+          "light": "resources/light/run.svg",
+          "dark": "resources/dark/run.svg"
         }
       },
       {
         "command": "context-runner.runFolder",
         "title": "%command.runFolder%",
         "icon": {
-          "light": "resources/light/upload-folder.svg",
-          "dark": "resources/dark/upload-folder.svg"
+          "light": "resources/light/run-folder.svg",
+          "dark": "resources/dark/run-folder.svg"
         }
       },
       {
