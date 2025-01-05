@@ -29,15 +29,21 @@
      "context-runner.scriptPath": "/path/to/your/script.sh"
    }
    ```
+   脚本会自动接收文件路径作为第一个参数。
 
 2. 使用自定义命令：
    ```json
    {
-     "context-runner.command": "your-command {filePath}"
+     // 方式 1：自动添加文件路径作为最后一个参数
+     "context-runner.command": "your-command"
+
+     // 方式 2：使用 {filePath} 指定文件路径位置
+     "context-runner.command": "your-command {filePath} --other-args"
    }
    ```
 
-注意：命令中的 `{filePath}` 会被替换为实际的文件路径。
+   - 如果命令中包含 `{filePath}`，它会被替换为实际的文件路径
+   - 如果命令中没有 `{filePath}`，文件路径会自动作为最后一个参数添加
 
 ### 使用示例
 
@@ -196,85 +202,108 @@ context-runner/
 
 1. **环境准备**
    ```bash
+   # 克隆项目
+   git clone https://github.com/dong4j/context-runner.git
+   cd context-runner
+
    # 安装依赖
    npm install
-   
-   # 安装 VS Code 扩展开发工具
-   npm install -g @vscode/vsce
    ```
 
 2. **开发模式**
-   - 按 F5 启动调试
-   - 在新窗口中测试插件
-   - 代码修改后会自动重新加载
+   ```bash
+   # 打开 VS Code
+   code .
 
-3. **打包发布**
+   # 按 F5 启动调试
+   # 这会打开一个新的 VS Code 窗口，其中加载了你的插件
+   # 代码修改后会自动重新加载
+   ```
+
+3. **打包和发布**
    ```bash
    # 打包插件
    npm run package
-   
-   # 发布插件
+   # 这会在项目根目录生成 context-runner-0.1.0.vsix 文件
+
+   # 发布到 VS Code 市场（需要 Personal Access Token）
    npm run publish
    ```
 
-### 开发注意事项
+### 安装方式
 
-1. **VS Code API 使用**
-   - 使用 `vscode.window.withProgress` 显示进度
-   - 使用 `vscode.workspace.getConfiguration` 获取配置
-   - 使用 `vscode.commands.registerCommand` 注册命令
+1. **从 VS Code 市场安装**
+   - 打开 VS Code
+   - 按 `Ctrl+Shift+X`（Windows/Linux）或 `Cmd+Shift+X`（macOS）打开扩展面板
+   - 搜索 "Context Runner"
+   - 点击 "Install" 安装
 
-2. **错误处理**
-   - 所有可能的错误都要捕获并显示友好的错误信息
-   - 使用 writeLog 函数记录详细日志
+2. **从 VSIX 文件安装**
+   ```bash
+   # 方式 1：使用 VS Code 命令面板
+   # 1. 按 Ctrl+Shift+P（Windows/Linux）或 Cmd+Shift+P（macOS）
+   # 2. 输入 "Install from VSIX"
+   # 3. 选择 context-runner-0.1.0.vsix 文件
 
-3. **国际化**
-   - 所有用户可见的字符串都要使用 localize 函数
-   - 在语言包文件中添加新的字符串
+   # 方式 2：使用命令行
+   code --install-extension context-runner-0.1.0.vsix
+   ```
 
-4. **性能优化**
-   - 使用异步操作处理文件
-   - 批量处理时显示整体进度
-   - 通知提示自动关闭
+3. **从源码安装**
+   ```bash
+   # 克隆项目
+   git clone https://github.com/dong4j/context-runner.git
+   cd context-runner
 
-### 调试技巧
+   # 安装依赖
+   npm install
 
-1. **输出面板**
-   - 使用 `console.log` 进行调试
-   - 在输出面板选择 "Context Runner" 查看日志
+   # 打包
+   npm run package
 
-2. **断点调试**
-   - 在代码中设置断点
-   - 使用 VS Code 的调试控制台
+   # 安装
+   code --install-extension context-runner-0.1.0.vsix
+   ```
 
-3. **日志文件**
-   - 查看 `~/.context-runner/run.log` 文件
-   - 包含详细的操作记录和错误信息
+### 升级插件
 
-## 常见问题
+1. **从 VS Code 市场升级**
+   - VS Code 会自动检查和提示更新
+   - 也可以在扩展面板中手动检查更新
 
-1. **找不到命令**
-   - 检查 PATH 环境变量
-   - 确保命令在终端中可用
-   - 检查 .zshrc 配置
+2. **手动升级**
+   ```bash
+   # 1. 先卸载旧版本
+   code --uninstall-extension dong4j.context-runner
 
-2. **执行失败**
-   - 查看执行日志获取详细错误信息
-   - 确认文件权限正确
-   - 验证脚本权限
+   # 2. 安装新版本
+   code --install-extension context-runner-0.1.0.vsix
+   ```
 
-3. **进度条不显示**
-   - 确认使用了最新版本的 VS Code
-   - 检查是否有其他插件冲突
+### 故障排除
 
-## 贡献指南
+1. **查看日志**
+   - 在命令面板中执行 "Show Run Log" 命令
+   - 日志文件位于 `~/.context-runner/run.log`
 
-欢迎提交 Pull Request 或创建 Issue！
+2. **常见问题**
+   - 如果命令执行失败，检查：
+     1. 命令或脚本路径是否正确
+     2. 命令或脚本是否有执行权限
+     3. 环境变量是否正确加载
 
-1. Fork 本仓库
-2. 创建特性分支
+3. **调试模式**
+   - 按 F5 启动调试模式
+   - 在 DEBUG CONSOLE 中查看详细日志
+   - 可以设置断点进行调试
+
+### 贡献代码
+
+1. Fork 项目
+2. 创建功能分支
 3. 提交改动
-4. 创建 Pull Request
+4. 推送到分支
+5. 提交 Pull Request
 
 ## 许可证
 

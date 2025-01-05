@@ -157,7 +157,13 @@ async function executeCommand(filePath, progress, current, total) {
     if (scriptPath) {
         cmd = `"${scriptPath}" "${filePath}"`;
     } else {
-        cmd = command.replace('{filePath}', `"${filePath}"`);
+        // 如果命令中包含 {filePath}，替换它
+        // 如果不包含，则将文件路径作为最后一个参数添加
+        if (command.includes('{filePath}')) {
+            cmd = command.replace('{filePath}', `"${filePath}"`);
+        } else {
+            cmd = `${command} "${filePath}"`;
+        }
     }
     
     writeLog(`执行命令: ${cmd}`);

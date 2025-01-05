@@ -1,7 +1,7 @@
 {
     "extension.description": "通过右键菜单快速执行自定义脚本或命令，支持进度显示和通知",
     "config.scriptPath": "要执行的脚本文件路径",
-    "config.command": "要执行的命令。使用 {filePath} 作为实际文件路径的占位符",
+    "config.command": "要执行的命令。文件路径会自动作为最后一个参数添加，或者你可以使用 {filePath} 指定其位置",
     "command.run": "执行命令",
     "command.runFolder": "对文件夹执行命令",
     "command.showLog": "显示执行日志",
