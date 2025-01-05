@@ -54,32 +54,25 @@ try {
  * @param {string} message 消息内容
  * @param {string} type 消息类型：'info', 'warning', 'error'
  * @param {number} [timeout=3000] 自动关闭时间（毫秒）
- * @example
- * showNotification('命令执行成功', 'info');
- * showNotification('执行失败：文件不存在', 'error');
  */
 function showNotification(message, type, timeout = 3000) {
-    let notification;
+    let promise;
     switch (type) {
         case 'info':
-            notification = vscode.window.showInformationMessage(message);
+            promise = vscode.window.showInformationMessage(message);
             break;
         case 'warning':
-            notification = vscode.window.showWarningMessage(message);
+            promise = vscode.window.showWarningMessage(message);
             break;
         case 'error':
-            notification = vscode.window.showErrorMessage(message);
+            promise = vscode.window.showErrorMessage(message);
             break;
         default:
-            notification = vscode.window.showInformationMessage(message);
+            promise = vscode.window.showInformationMessage(message);
     }
-    
-    // 自动关闭通知
-    if (timeout > 0) {
-        setTimeout(() => {
-            notification.dispose();
-        }, timeout);
-    }
+
+    // VS Code 的通知会自动关闭，不需要手动处理
+    return promise;
 }
 
 /**
