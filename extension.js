@@ -29,9 +29,16 @@ const LOG_DIR = path.join(os.homedir(), '.context-runner');
 // 日志文件
 const LOG_FILE = path.join(LOG_DIR, 'run.log');
 
-// 创建日志目录
-if (!fs.existsSync(LOG_DIR)) {
-    fs.mkdirSync(LOG_DIR);
+// 创建日志目录和文件
+try {
+    if (!fs.existsSync(LOG_DIR)) {
+        fs.mkdirSync(LOG_DIR, { recursive: true, mode: 0o755 });
+    }
+    if (!fs.existsSync(LOG_FILE)) {
+        fs.writeFileSync(LOG_FILE, '', { mode: 0o644 });
+    }
+} catch (error) {
+    console.error('Failed to create log directory or file:', error);
 }
 
 /**
@@ -88,14 +95,16 @@ function localize(key, ...args) {
  * 写入日志
  * @param {string} message 日志消息
  * @param {string} [type='INFO'] 日志类型
- * @example
- * writeLog('开始执行命令: ls -l');
- * writeLog('执行失败：文件不存在', 'ERROR');
  */
 function writeLog(message, type = 'INFO') {
-    const timestamp = new Date().toISOString();
-    const logMessage = `[${timestamp}] [${type}] ${message}\n`;
-    fs.appendFileSync(LOG_FILE, logMessage);
+    try {
+        const timestamp = new Date().toISOString();
+        const logMessage = `[${timestamp}] [${type}] ${message}\n`;
+        fs.appendFileSync(LOG_FILE, logMessage, { encoding: 'utf8', mode: 0o644 });
+    } catch (error) {
+        console.error('Failed to write log:', error);
+        vscode.window.showErrorMessage(`Failed to write log: ${error.message}`);
+    }
 }
 
 /**
@@ -246,13 +255,30 @@ async function runFolder(uri) {
  * 显示日志
  */
 async function showLog() {
-    if (!fs.existsSync(LOG_FILE)) {
-        showNotification(localize('info.noLogFile'), 'warning');
-        return;
+    try {
+        if (!fs.existsSync(LOG_FILE)) {
+            showNotification(localize('info.noLogFile'), 'warning');
+            return;
+        }
+
+        // 检查文件是否可读
+        try {
+            await fs.promises.access(LOG_FILE, fs.constants.R_OK);
+        } catch (error) {
+            showNotification(`Cannot read log file: ${error.message}`, 'error');
+            return;
+        }
+
+        // 尝试打开日志文件
+        try {
+            const doc = await vscode.workspace.openTextDocument(LOG_FILE);
+            await vscode.window.showTextDocument(doc, { preview: false });
+        } catch (error) {
+            showNotification(`Failed to open log file: ${error.message}`, 'error');
+        }
+    } catch (error) {
+        showNotification(`Error accessing log: ${error.message}`, 'error');
     }
-    
-    const doc = await vscode.workspace.openTextDocument(LOG_FILE);
-    await vscode.window.showTextDocument(doc);
 }
 
 /**
