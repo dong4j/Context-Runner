@@ -29,6 +29,14 @@ const LOG_DIR = path.join(os.homedir(), '.context-runner');
 // 日志文件
 const LOG_FILE = path.join(LOG_DIR, 'run.log');
 
+// 日志级别映射
+const LOG_LEVELS = {
+    error: 0,
+    warn: 1,
+    info: 2,
+    debug: 3
+};
+
 // 创建日志目录和文件
 try {
     if (!fs.existsSync(LOG_DIR)) {
@@ -98,6 +106,19 @@ function localize(key, ...args) {
  */
 function writeLog(message, type = 'INFO') {
     try {
+        const config = vscode.workspace.getConfiguration('context-runner');
+        const logEnabled = config.get('logEnabled', true);
+        const logLevel = config.get('logLevel', 'info').toLowerCase();
+        
+        if (!logEnabled) {
+            return;
+        }
+
+        const messageType = type.toLowerCase();
+        if (LOG_LEVELS[messageType] > LOG_LEVELS[logLevel]) {
+            return;
+        }
+
         const timestamp = new Date().toISOString();
         const logMessage = `[${timestamp}] [${type}] ${message}\n`;
         fs.appendFileSync(LOG_FILE, logMessage, { encoding: 'utf8', mode: 0o644 });

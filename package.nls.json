@@ -2,6 +2,8 @@
     "extension.description": "Run custom scripts or commands from context menu with progress and notifications",
     "config.scriptPath": "Path to the script file that will be executed",
     "config.command": "Command to execute. The file path will be automatically added as the last argument, or you can use {filePath} to specify its position",
+    "config.logEnabled": "Enable or disable logging",
+    "config.logLevel": "Set the logging level (error, warn, info, debug)",
     "command.run": "Run Command",
     "command.runFolder": "Run Command on Folder",
     "command.showLog": "Show Run Log",

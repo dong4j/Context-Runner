@@ -2,6 +2,8 @@
     "extension.description": "通过右键菜单快速执行自定义脚本或命令，支持进度显示和通知",
     "config.scriptPath": "要执行的脚本文件路径",
     "config.command": "要执行的命令。文件路径会自动作为最后一个参数添加，或者你可以使用 {filePath} 指定其位置",
+    "config.logEnabled": "启用或禁用日志",
+    "config.logLevel": "设置日志级别（error：错误，warn：警告，info：信息，debug：调试）",
     "command.run": "执行命令",
     "command.runFolder": "对文件夹执行命令",
     "command.showLog": "显示执行日志",

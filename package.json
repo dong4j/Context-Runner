@@ -16,7 +16,11 @@
     "Other"
   ],
   "icon": "resources/icon.png",
-  "activationEvents": [],
+  "activationEvents": [
+    "onCommand:context-runner.run",
+    "onCommand:context-runner.runFolder",
+    "onCommand:context-runner.showLog"
+  ],
   "main": "./extension.js",
   "contributes": {
     "commands": [
@@ -75,6 +79,17 @@
           "type": "string",
           "default": "",
           "markdownDescription": "%config.command%"
+        },
+        "context-runner.logEnabled": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "%config.logEnabled%"
+        },
+        "context-runner.logLevel": {
+          "type": "string",
+          "default": "info",
+          "enum": ["error", "warn", "info", "debug"],
+          "markdownDescription": "%config.logLevel%"
         }
       }
     }
