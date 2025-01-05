@@ -1,0 +1,54 @@
+# VS Code 相关
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+.history/
+
+# Node.js 相关
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.npm
+.node_repl_history
+
+# 打包文件
+*.vsix
+out/
+dist/
+
+# 操作系统相关
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# 日志文件
+*.log
+logs/
+upload.log
+
+# 环境变量
+.env
+.env.local
+.env.*.local
+
+# IDE 相关
+.idea/
+*.swp
+*.swo
+*.swn
+.vscode-test/
+
+# 测试覆盖率
+coverage/
+.nyc_output/
+
+# 临时文件
+*.tmp
+*.temp
+.tmp/
+temp/

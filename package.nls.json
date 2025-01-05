@@ -1,0 +1,16 @@
+{
+    "vs-upload-image.config.scriptPath.description": "The path to the upload script",
+    "vs-upload-image.config.uploadCommand.description": "Custom command to upload images. Use {imagePath} as placeholder for the image path",
+    "vs-upload-image.upload.title": "Upload Image",
+    "vs-upload-image.uploadFolder.title": "Upload All Images",
+    "vs-upload-image.showLog.title": "Show Upload Log",
+    "vs-upload-image.error.noImage": "No image selected",
+    "vs-upload-image.error.noScriptPath": "No upload script or command configured",
+    "vs-upload-image.error.scriptError": "Upload failed: {0}",
+    "vs-upload-image.info.uploadSuccess": "Upload successful",
+    "vs-upload-image.info.uploadInProgress": "Uploading {0}% ({1} of {2})",
+    "vs-upload-image.info.noLogFile": "No log file found",
+    "vs-upload-image.info.noImages": "No images found in the selected folder",
+    "vs-upload-image.button.configure": "Configure",
+    "vs-upload-image.button.cancel": "Cancel"
+}

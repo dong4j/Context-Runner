@@ -1,0 +1,93 @@
+{
+  "name": "vs-upload-image",
+  "displayName": "VS Upload Image",
+  "description": "Upload images via context menu",
+  "version": "0.0.1",
+  "publisher": "dong4j",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dong4j/vs-upload-image"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "icon": "resources/icon.png",
+  "activationEvents": [],
+  "main": "./extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "VS Upload Image",
+      "properties": {
+        "vs-upload-image.scriptPath": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "%vs-upload-image.config.scriptPath.description%"
+        },
+        "vs-upload-image.uploadCommand": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "%vs-upload-image.config.uploadCommand.description%"
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "vs-upload-image.upload",
+        "title": "%vs-upload-image.upload.title%",
+        "icon": {
+          "light": "resources/light/upload.svg",
+          "dark": "resources/dark/upload.svg"
+        }
+      },
+      {
+        "command": "vs-upload-image.uploadFolder",
+        "title": "%vs-upload-image.uploadFolder.title%",
+        "icon": {
+          "light": "resources/light/upload-folder.svg",
+          "dark": "resources/dark/upload-folder.svg"
+        }
+      },
+      {
+        "command": "vs-upload-image.showLog",
+        "title": "%vs-upload-image.showLog.title%"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "when": "resourceExtname =~ /\\.(png|jpg|jpeg|gif|webp)$/i",
+          "command": "vs-upload-image.upload",
+          "group": "navigation@1"
+        },
+        {
+          "when": "explorerResourceIsFolder",
+          "command": "vs-upload-image.uploadFolder",
+          "group": "navigation@2"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "pretest": "npm run lint",
+    "test": "node ./test/runTest.js",
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "18.x",
+    "@types/mocha": "^10.0.6",
+    "@types/glob": "^8.1.0",
+    "@vscode/test-electron": "^2.3.8",
+    "@vscode/vsce": "^2.22.0",
+    "eslint": "^8.54.0",
+    "glob": "^10.3.10",
+    "mocha": "^10.2.0",
+    "typescript": "^5.3.2"
+  }
+}
