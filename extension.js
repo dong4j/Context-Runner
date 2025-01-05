@@ -170,25 +170,27 @@ async function getEnvironmentVariables() {
  * @returns {Promise<void>}
  */
 async function executeCommand(filePath, progress, current, total) {
+    console.log('executeCommand called with:', { filePath, current, total });
+    
     const config = vscode.workspace.getConfiguration('context-runner');
     const scriptPath = config.get('scriptPath');
     const command = config.get('command');
     
     if (!scriptPath && !command) {
+        console.error('No script or command configured');
         showNotification(localize('error.noConfig'), 'error');
         return;
     }
-    
+
     // 获取环境变量
     const env = await getEnvironmentVariables();
-    
+    console.log('Environment variables loaded');
+
     // 准备执行的命令
     let cmd;
     if (scriptPath) {
         cmd = `"${scriptPath}" "${filePath}"`;
     } else {
-        // 如果命令中包含 {filePath}，替换它
-        // 如果不包含，则将文件路径作为最后一个参数添加
         if (command.includes('{filePath}')) {
             cmd = command.replace('{filePath}', `"${filePath}"`);
         } else {
@@ -196,7 +198,8 @@ async function executeCommand(filePath, progress, current, total) {
         }
     }
     
-    writeLog(`执行命令: ${cmd}`);
+    console.log('Prepared command:', cmd);
+    writeLog(`Executing command: ${cmd}`, 'INFO');
     
     // 更新进度
     if (progress && total) {
@@ -227,16 +230,27 @@ async function executeCommand(filePath, progress, current, total) {
  * @param {vscode.Uri} uri 文件 URI
  */
 async function runSingle(uri) {
+    console.log('runSingle called with uri:', uri ? uri.fsPath : 'undefined');
+    
+    if (!uri) {
+        console.error('No file selected');
+        showNotification(localize('error.noFile'), 'error');
+        return;
+    }
+
     try {
         await vscode.window.withProgress({
             location: vscode.ProgressLocation.Notification,
             title: localize('command.run'),
             cancellable: false
         }, async (progress) => {
-            await executeCommand(uri.fsPath, progress);
+            writeLog(`Running command for file: ${uri.fsPath}`, 'INFO');
+            await executeCommand(uri.fsPath, progress, 1, 1);
             showNotification(localize('info.success'), 'info');
         });
     } catch (error) {
+        console.error('Error in runSingle:', error);
+        writeLog(`Error in runSingle: ${error.message}`, 'ERROR');
         showNotification(localize('error.scriptError', error.message), 'error');
     }
 }
@@ -246,16 +260,27 @@ async function runSingle(uri) {
  * @param {vscode.Uri} uri 文件夹 URI
  */
 async function runFolder(uri) {
+    console.log('runFolder called with uri:', uri ? uri.fsPath : 'undefined');
+    
+    if (!uri) {
+        console.error('No folder selected');
+        showNotification(localize('error.noFile'), 'error');
+        return;
+    }
+
     try {
         const files = await vscode.workspace.findFiles(
             new vscode.RelativePattern(uri.fsPath, '**/*'),
             '**/node_modules/**'
         );
-        
+
         if (files.length === 0) {
+            console.log('No files found in folder');
             showNotification(localize('info.noFiles'), 'warning');
             return;
         }
+
+        console.log(`Found ${files.length} files in folder`);
         
         await vscode.window.withProgress({
             location: vscode.ProgressLocation.Notification,
@@ -263,11 +288,14 @@ async function runFolder(uri) {
             cancellable: false
         }, async (progress) => {
             for (let i = 0; i < files.length; i++) {
+                writeLog(`Processing file ${i + 1}/${files.length}: ${files[i].fsPath}`, 'INFO');
                 await executeCommand(files[i].fsPath, progress, i + 1, files.length);
             }
             showNotification(localize('info.success'), 'info');
         });
     } catch (error) {
+        console.error('Error in runFolder:', error);
+        writeLog(`Error in runFolder: ${error.message}`, 'ERROR');
         showNotification(localize('error.scriptError', error.message), 'error');
     }
 }

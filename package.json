@@ -12,15 +12,26 @@
   "engines": {
     "vscode": "^1.85.0"
   },
+  "dependencies": {
+    "iconv-lite": "^0.6.3"
+  },
+  "devDependencies": {
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "18.x",
+    "@types/vscode": "^1.85.0",
+    "@vscode/test-electron": "^2.3.8",
+    "@vscode/vsce": "^2.22.0",
+    "eslint": "^8.54.0",
+    "glob": "^10.3.10",
+    "mocha": "^10.2.0",
+    "typescript": "^5.3.2"
+  },
   "categories": [
     "Other"
   ],
   "icon": "resources/icon.png",
-  "activationEvents": [
-    "onCommand:context-runner.run",
-    "onCommand:context-runner.runFolder",
-    "onCommand:context-runner.showLog"
-  ],
+  "activationEvents": [],
   "main": "./extension.js",
   "contributes": {
     "commands": [
@@ -88,7 +99,12 @@
         "context-runner.logLevel": {
           "type": "string",
           "default": "info",
-          "enum": ["error", "warn", "info", "debug"],
+          "enum": [
+            "error",
+            "warn",
+            "info",
+            "debug"
+          ],
           "markdownDescription": "%config.logLevel%"
         }
       }
@@ -100,17 +116,5 @@
     "test": "node ./test/runTest.js",
     "package": "vsce package",
     "publish": "vsce publish"
-  },
-  "devDependencies": {
-    "@types/vscode": "^1.85.0",
-    "@types/node": "18.x",
-    "@types/mocha": "^10.0.6",
-    "@types/glob": "^8.1.0",
-    "@vscode/test-electron": "^2.3.8",
-    "@vscode/vsce": "^2.22.0",
-    "eslint": "^8.54.0",
-    "glob": "^10.3.10",
-    "mocha": "^10.2.0",
-    "typescript": "^5.3.2"
   }
 }
