@@ -2,7 +2,7 @@
   "name": "context-runner",
   "displayName": "Context Runner",
   "description": "Run custom scripts or commands from context menu with progress and notifications",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "publisher": "dong4j",
   "license": "MIT",
   "repository": {
