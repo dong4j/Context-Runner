@@ -7,7 +7,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/dong4j/vs-upload-image"
+    "url": "https://github.com/dong4j/context-runner"
   },
   "engines": {
     "vscode": "^1.85.0"
@@ -19,56 +19,56 @@
   "activationEvents": [],
   "main": "./extension.js",
   "contributes": {
-    "configuration": {
-      "title": "VS Upload Image",
-      "properties": {
-        "vs-upload-image.scriptPath": {
-          "type": "string",
-          "default": "",
-          "markdownDescription": "%vs-upload-image.config.scriptPath.description%"
-        },
-        "vs-upload-image.uploadCommand": {
-          "type": "string",
-          "default": "",
-          "markdownDescription": "%vs-upload-image.config.uploadCommand.description%"
-        }
-      }
-    },
     "commands": [
       {
-        "command": "vs-upload-image.upload",
-        "title": "%vs-upload-image.upload.title%",
+        "command": "context-runner.run",
+        "title": "%command.run%",
         "icon": {
           "light": "resources/light/upload.svg",
           "dark": "resources/dark/upload.svg"
         }
       },
       {
-        "command": "vs-upload-image.uploadFolder",
-        "title": "%vs-upload-image.uploadFolder.title%",
+        "command": "context-runner.runFolder",
+        "title": "%command.runFolder%",
         "icon": {
           "light": "resources/light/upload-folder.svg",
           "dark": "resources/dark/upload-folder.svg"
         }
       },
       {
-        "command": "vs-upload-image.showLog",
-        "title": "%vs-upload-image.showLog.title%"
+        "command": "context-runner.showLog",
+        "title": "%command.showLog%"
       }
     ],
     "menus": {
       "explorer/context": [
         {
           "when": "resourceExtname =~ /\\.(png|jpg|jpeg|gif|webp)$/i",
-          "command": "vs-upload-image.upload",
+          "command": "context-runner.run",
           "group": "navigation@1"
         },
         {
           "when": "explorerResourceIsFolder",
-          "command": "vs-upload-image.uploadFolder",
+          "command": "context-runner.runFolder",
           "group": "navigation@2"
         }
       ]
+    },
+    "configuration": {
+      "title": "Context Runner",
+      "properties": {
+        "context-runner.scriptPath": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "%config.scriptPath%"
+        },
+        "context-runner.command": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "%config.command%"
+        }
+      }
     }
   },
   "scripts": {
