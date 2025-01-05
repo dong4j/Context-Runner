@@ -1,421 +1,273 @@
 /**
- * VS Code 图片上传插件
+ * Context Runner - VS Code Extension
  * 
- * 这个插件允许用户通过右键菜单上传图片到指定服务器。主要功能包括：
- * 1. 支持单个图片上传
- * 2. 支持文件夹批量上传
- * 3. 支持上传进度显示
- * 4. 支持自定义上传命令或脚本
- * 5. 支持中英文国际化
+ * 这个插件允许用户通过右键菜单快速执行自定义脚本或命令。
+ * 支持单个文件和文件夹批量处理，提供进度显示和国际化支持。
  * 
- * @module vs-upload-image
+ * 主要功能：
+ * 1. 通过右键菜单快速执行命令
+ * 2. 支持文件和文件夹操作
+ * 3. 实时执行进度显示
+ * 4. 支持中英文界面
+ * 5. 支持自定义命令或脚本
+ * 6. 详细的执行日志
+ * 
+ * @author dong4j
+ * @version 0.0.1
+ * @since 2024-01-05
  */
 
 const vscode = require('vscode');
-const { exec } = require('child_process');
-const path = require('path');
 const fs = require('fs');
+const path = require('path');
 const os = require('os');
+const { exec } = require('child_process');
+const iconv = require('iconv-lite');
 
-// 通知自动关闭时间（毫秒）
-const NOTIFICATION_TIMEOUT = 3000;
+// 日志目录
+const LOG_DIR = path.join(os.homedir(), '.context-runner');
+// 日志文件
+const LOG_FILE = path.join(LOG_DIR, 'run.log');
+
+// 创建日志目录
+if (!fs.existsSync(LOG_DIR)) {
+    fs.mkdirSync(LOG_DIR);
+}
 
 /**
- * 显示带自动关闭的通知
- * 这个函数封装了 VS Code 的通知 API，并添加了自动关闭功能
- * 
- * @param {string} message - 要显示的消息
- * @param {'info' | 'warning' | 'error'} type - 通知类型：info（信息）, warning（警告）, error（错误）
+ * 显示通知消息
+ * @param {string} message 消息内容
+ * @param {string} type 消息类型：'info', 'warning', 'error'
+ * @param {number} [timeout=3000] 自动关闭时间（毫秒）
  * @example
- * showNotification('上传成功'); // 显示信息通知
- * showNotification('上传失败', 'error'); // 显示错误通知
+ * showNotification('命令执行成功', 'info');
+ * showNotification('执行失败：文件不存在', 'error');
  */
-function showNotification(message, type = 'info') {
+function showNotification(message, type, timeout = 3000) {
     let notification;
     switch (type) {
-        case 'error':
-            notification = vscode.window.showErrorMessage(message);
+        case 'info':
+            notification = vscode.window.showInformationMessage(message);
             break;
         case 'warning':
             notification = vscode.window.showWarningMessage(message);
             break;
+        case 'error':
+            notification = vscode.window.showErrorMessage(message);
+            break;
         default:
             notification = vscode.window.showInformationMessage(message);
     }
-
-    // 设置定时器自动关闭通知
-    setTimeout(() => {
-        notification.then(item => {
-            if (item) {
-                // @ts-ignore - VS Code API 类型定义中可能没有 dispose 方法
-                item.dispose();
-            }
-        });
-    }, NOTIFICATION_TIMEOUT);
+    
+    // 自动关闭通知
+    if (timeout > 0) {
+        setTimeout(() => {
+            notification.dispose();
+        }, timeout);
+    }
 }
 
 /**
- * 获取本地化字符串
- * 使用 VS Code 的本地化 API 获取对应语言的字符串
- * 
- * @param {string} key - 本地化字符串的键
- * @param {...any} args - 替换参数
+ * 本地化字符串
+ * @param {string} key 本地化 key
+ * @param {...string} args 替换参数
  * @returns {string} 本地化后的字符串
  * @example
- * localize('vs-upload-image.info.uploadSuccess'); // 返回当前语言的"上传成功"文本
+ * localize('command.run.title') // => "执行命令"
+ * localize('info.progress', '50', '1', '2') // => "正在执行 50%（1/2）"
  */
 function localize(key, ...args) {
-    const message = vscode.l10n.t(key);
+    const message = `context-runner.${key}`;
     if (args.length > 0) {
-        return message.replace(/\{(\d+)\}/g, (match, index) => args[index] || '');
+        return vscode.l10n.t(message, ...args);
     }
-    return message;
+    return vscode.l10n.t(message);
 }
 
 /**
  * 写入日志
- * 将操作日志写入到用户目录下的 .vs-upload-image/upload.log 文件
- * 
- * @param {string} content - 日志内容
+ * @param {string} message 日志消息
+ * @param {string} [type='INFO'] 日志类型
  * @example
- * writeLog('Starting upload for file: example.png');
+ * writeLog('开始执行命令: ls -l');
+ * writeLog('执行失败：文件不存在', 'ERROR');
  */
-function writeLog(content) {
-    const logDir = path.join(os.homedir(), '.vs-upload-image');
-    const logFile = path.join(logDir, 'upload.log');
-    
-    // 确保日志目录存在
-    if (!fs.existsSync(logDir)) {
-        fs.mkdirSync(logDir, { recursive: true });
-    }
-    
-    // 写入日志，包含时间戳
+function writeLog(message, type = 'INFO') {
     const timestamp = new Date().toISOString();
-    const logContent = `[${timestamp}] ${content}\n`;
-    fs.appendFileSync(logFile, logContent);
+    const logMessage = `[${timestamp}] [${type}] ${message}\n`;
+    fs.appendFileSync(LOG_FILE, logMessage);
 }
 
 /**
  * 获取环境变量
- * 这个函数会尝试加载用户的 shell 配置（如 .zshrc），以确保能够使用用户配置的命令
- * 
- * @returns {Promise<{[key: string]: string}>} 包含环境变量的对象
- * @example
- * const env = await getEnvironmentVariables();
- * console.log(env.PATH); // 显示 PATH 环境变量
+ * 从用户的 shell 配置文件（如 .zshrc）中获取环境变量
+ * @returns {Promise<Object>} 环境变量对象
  */
 async function getEnvironmentVariables() {
-    return new Promise((resolve, reject) => {
-        // 检查默认 shell
-        const shell = process.env.SHELL || '/bin/zsh';
-        const isZsh = shell.includes('zsh');
+    return new Promise((resolve) => {
+        const shell = os.platform() === 'win32' ? 'cmd.exe' : 'zsh';
+        const shellArgs = os.platform() === 'win32' ? ['/c', 'set'] : ['-ic', 'env'];
         
-        // 使用 zsh 获取环境变量
-        const command = isZsh ? 
-            'zsh -i -c "source ~/.zshrc > /dev/null 2>&1; env"' : 
-            'bash -ilc "env"';
-            
-        writeLog(`Using shell command: ${command}`);
-        
-        exec(command, { shell: isZsh ? '/bin/zsh' : '/bin/bash' }, (error, stdout, stderr) => {
+        const child = exec(`${shell} ${shellArgs.join(' ')}`, (error, stdout) => {
             if (error) {
-                writeLog(`Error getting environment: ${error.message}`);
-                // 如果获取失败，返回当前进程的环境变量
+                console.error('获取环境变量失败:', error);
                 resolve(process.env);
                 return;
             }
-
-            try {
-                const env = {};
-                stdout.split('\n').forEach(line => {
-                    const [key, ...values] = line.split('=');
-                    if (key) {
-                        env[key] = values.join('=');
-                    }
-                });
-                
-                // 确保有基本的环境变量
-                env.HOME = env.HOME || os.homedir();
-                env.PATH = env.PATH || process.env.PATH;
-                env.SHELL = env.SHELL || shell;
-                
-                writeLog(`Loaded environment variables. PATH=${env.PATH}`);
-                resolve(env);
-            } catch (e) {
-                writeLog(`Error parsing environment: ${e.message}`);
-                resolve(process.env);
-            }
-        });
-    });
-}
-
-/**
- * 执行上传命令
- * 这个函数负责实际执行上传操作，支持两种模式：
- * 1. 使用自定义命令（uploadCommand）
- * 2. 使用上传脚本（scriptPath）
- * 
- * @param {string} imagePath - 要上传的图片路径
- * @param {vscode.Progress} progress - VS Code 进度对象
- * @param {number} index - 当前是第几个文件
- * @param {number} total - 总文件数
- * @returns {Promise<void>}
- * @example
- * await executeUploadCommand('/path/to/image.png', progress, 1, 1);
- */
-async function executeUploadCommand(imagePath, progress, index, total) {
-    const config = vscode.workspace.getConfiguration('vs-upload-image');
-    const uploadCommand = config.get('uploadCommand');
-    const scriptPath = config.get('scriptPath');
-
-    // 获取完整的环境变量
-    const env = await getEnvironmentVariables();
-    writeLog(`Using SHELL=${env.SHELL}`);
-
-    return new Promise((resolve, reject) => {
-        // 更新进度
-        if (progress) {
-            const percentage = Math.round((index / total) * 100);
-            progress.report({ 
-                message: localize('vs-upload-image.info.uploadInProgress', percentage, index, total),
-                increment: (1 / total) * 100 
-            });
-        }
-
-        if (uploadCommand) {
-            // 使用自定义命令
-            const command = uploadCommand.replace(/\{imagePath\}/g, imagePath);
-            writeLog(`Executing custom command: ${command}`);
             
-            // 构建完整的 zsh 命令
-            const fullCommand = `source ~/.zshrc > /dev/null 2>&1 && ${command}`;
-            writeLog(`Full command: ${fullCommand}`);
-            
-            // 使用 zsh -i -c 执行命令
-            exec(`zsh -i -c "${fullCommand}"`, {
-                env,
-                shell: '/bin/zsh'
-            }, (error, stdout, stderr) => {
-                if (error) {
-                    writeLog(`Error: ${error.message}`);
-                    reject(error);
-                    return;
+            const env = {};
+            const output = iconv.decode(Buffer.from(stdout), 'utf8');
+            output.split('\n').forEach(line => {
+                const parts = line.split('=');
+                if (parts.length >= 2) {
+                    env[parts[0]] = parts.slice(1).join('=');
                 }
-                if (stdout) writeLog(`stdout: ${stdout}`);
-                if (stderr) writeLog(`stderr: ${stderr}`);
-                resolve();
             });
-        } else if (scriptPath) {
-            // 使用脚本路径
-            writeLog(`Executing script: "${scriptPath}" "${imagePath}"`);
             
-            // 构建完整的 zsh 命令
-            const fullCommand = `source ~/.zshrc > /dev/null 2>&1 && "${scriptPath}" "${imagePath}"`;
-            writeLog(`Full command: ${fullCommand}`);
-            
-            // 使用 zsh -i -c 执行命令
-            exec(`zsh -i -c "${fullCommand}"`, {
-                env,
-                shell: '/bin/zsh'
-            }, (error, stdout, stderr) => {
-                if (error) {
-                    writeLog(`Error: ${error.message}`);
-                    reject(error);
-                    return;
-                }
-                if (stdout) writeLog(`stdout: ${stdout}`);
-                if (stderr) writeLog(`stderr: ${stderr}`);
-                resolve();
-            });
-        } else {
-            reject(new Error('No upload command or script path configured'));
-        }
-    });
-}
-
-/**
- * 上传单个图片
- * 处理单个图片的上传，包括进度显示和错误处理
- * 
- * @param {vscode.Uri} uri - VS Code 的 URI 对象，包含文件路径
- * @returns {Promise<void>}
- * @example
- * vscode.commands.registerCommand('vs-upload-image.upload', uploadSingleImage);
- */
-async function uploadSingleImage(uri) {
-    if (!uri) {
-        showNotification(localize('vs-upload-image.error.noImage'), 'error');
-        return;
-    }
-
-    const filePath = uri.fsPath;
-    writeLog(`Starting upload for file: ${filePath}`);
-    
-    try {
-        await vscode.window.withProgress({
-            location: vscode.ProgressLocation.Notification,
-            title: path.basename(filePath),
-            cancellable: false
-        }, async (progress) => {
-            progress.report({ increment: 0 });
-            await executeUploadCommand(filePath, progress, 1, 1);
-            progress.report({ increment: 100 });
+            resolve({ ...process.env, ...env });
         });
         
-        showNotification(localize('vs-upload-image.info.uploadSuccess'));
-    } catch (error) {
-        const errorMsg = localize('vs-upload-image.error.scriptError', error.message);
-        writeLog(errorMsg);
-        showNotification(errorMsg, 'error');
-    }
+        child.on('error', () => resolve(process.env));
+    });
 }
 
 /**
- * 上传文件夹中的所有图片
- * 递归遍历文件夹，找到所有支持的图片文件并上传
- * 
- * @param {vscode.Uri} uri - VS Code 的 URI 对象，包含文件夹路径
+ * 执行命令
+ * @param {string} filePath 文件路径
+ * @param {vscode.Progress} progress 进度对象
+ * @param {number} [current] 当前进度
+ * @param {number} [total] 总数
  * @returns {Promise<void>}
- * @example
- * vscode.commands.registerCommand('vs-upload-image.uploadFolder', uploadFolderImages);
  */
-async function uploadFolderImages(uri) {
-    if (!uri) {
-        showNotification(localize('vs-upload-image.error.noImage'), 'error');
+async function executeCommand(filePath, progress, current, total) {
+    const config = vscode.workspace.getConfiguration('context-runner');
+    const scriptPath = config.get('scriptPath');
+    const command = config.get('command');
+    
+    if (!scriptPath && !command) {
+        showNotification(localize('error.noScriptPath'), 'error');
         return;
     }
-
-    const folderPath = uri.fsPath;
-    writeLog(`Starting upload for folder: ${folderPath}`);
-
-    try {
-        // 递归获取所有图片文件
-        const imageFiles = [];
-        const walk = (dir) => {
-            const files = fs.readdirSync(dir);
-            files.forEach(file => {
-                const filePath = path.join(dir, file);
-                const stat = fs.statSync(filePath);
-                if (stat.isDirectory()) {
-                    walk(filePath);
-                } else if (/\.(png|jpg|jpeg|gif|webp)$/i.test(file)) {
-                    imageFiles.push(filePath);
-                }
-            });
-        };
-        walk(folderPath);
-
-        if (imageFiles.length === 0) {
-            showNotification(localize('vs-upload-image.info.noImages'));
-            return;
-        }
-
-        await vscode.window.withProgress({
-            location: vscode.ProgressLocation.Notification,
-            title: path.basename(folderPath),
-            cancellable: false
-        }, async (progress) => {
-            progress.report({ increment: 0 });
-            
-            for (let i = 0; i < imageFiles.length; i++) {
-                await executeUploadCommand(imageFiles[i], progress, i + 1, imageFiles.length);
+    
+    // 获取环境变量
+    const env = await getEnvironmentVariables();
+    
+    // 准备执行的命令
+    let cmd;
+    if (scriptPath) {
+        cmd = `"${scriptPath}" "${filePath}"`;
+    } else {
+        cmd = command.replace('{filePath}', `"${filePath}"`);
+    }
+    
+    writeLog(`执行命令: ${cmd}`);
+    
+    // 更新进度
+    if (progress && total) {
+        const percentage = Math.round((current / total) * 100);
+        progress.report({
+            message: localize('info.progress', percentage.toString(), current.toString(), total.toString()),
+            increment: (1 / total) * 100
+        });
+    }
+    
+    return new Promise((resolve, reject) => {
+        exec(cmd, { env }, (error, stdout, stderr) => {
+            if (error) {
+                writeLog(`执行失败: ${error.message}`, 'ERROR');
+                writeLog(`错误输出: ${stderr}`, 'ERROR');
+                reject(error);
+                return;
             }
             
-            progress.report({ increment: 100 });
+            writeLog(`执行成功: ${stdout}`);
+            resolve(stdout);
         });
+    });
+}
 
-        showNotification(localize('vs-upload-image.info.uploadSuccess'));
+/**
+ * 处理单个文件
+ * @param {vscode.Uri} uri 文件 URI
+ */
+async function runSingle(uri) {
+    try {
+        await vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: localize('command.run'),
+            cancellable: false
+        }, async (progress) => {
+            await executeCommand(uri.fsPath, progress);
+            showNotification(localize('info.success'), 'info');
+        });
     } catch (error) {
-        const errorMsg = localize('vs-upload-image.error.scriptError', error.message);
-        writeLog(errorMsg);
-        showNotification(errorMsg, 'error');
+        showNotification(localize('error.scriptError', error.message), 'error');
     }
 }
 
 /**
- * 插件激活入口
- * 当插件被激活时，这个函数会被 VS Code 调用
- * 在这里注册所有的命令和事件监听器
- * 
- * @param {vscode.ExtensionContext} context - VS Code 插件上下文
- * @example
- * // 这个函数会在插件激活时自动调用
- * activate(context);
+ * 处理文件夹
+ * @param {vscode.Uri} uri 文件夹 URI
  */
-function activate(context) {
-    // 注册查看日志命令
-    let showLogCommand = vscode.commands.registerCommand('vs-upload-image.showLog', () => {
-        const logFile = path.join(os.homedir(), '.vs-upload-image', 'upload.log');
-        if (fs.existsSync(logFile)) {
-            vscode.workspace.openTextDocument(logFile).then(doc => {
-                vscode.window.showTextDocument(doc);
-            });
-        } else {
-            showNotification(localize('vs-upload-image.info.noLogFile'));
-        }
-    });
-
-    // 注册上传单个图片命令
-    let uploadCommand = vscode.commands.registerCommand('vs-upload-image.upload', async (uri) => {
-        // 检查配置
-        const config = vscode.workspace.getConfiguration('vs-upload-image');
-        const scriptPath = config.get('scriptPath');
-        const uploadCommand = config.get('uploadCommand');
-
-        if (!scriptPath && !uploadCommand) {
-            const result = await vscode.window.showErrorMessage(
-                localize('vs-upload-image.error.noScriptPath'),
-                localize('vs-upload-image.button.configure'),
-                localize('vs-upload-image.button.cancel')
-            );
-            
-            if (result === localize('vs-upload-image.button.configure')) {
-                vscode.commands.executeCommand('workbench.action.openSettings', 'vs-upload-image');
-            }
+async function runFolder(uri) {
+    try {
+        const files = await vscode.workspace.findFiles(
+            new vscode.RelativePattern(uri.fsPath, '**/*'),
+            '**/node_modules/**'
+        );
+        
+        if (files.length === 0) {
+            showNotification(localize('info.noFiles'), 'warning');
             return;
         }
-
-        await uploadSingleImage(uri);
-    });
-
-    // 注册上传文件夹命令
-    let uploadFolderCommand = vscode.commands.registerCommand('vs-upload-image.uploadFolder', async (uri) => {
-        // 检查配置
-        const config = vscode.workspace.getConfiguration('vs-upload-image');
-        const scriptPath = config.get('scriptPath');
-        const uploadCommand = config.get('uploadCommand');
-
-        if (!scriptPath && !uploadCommand) {
-            const result = await vscode.window.showErrorMessage(
-                localize('vs-upload-image.error.noScriptPath'),
-                localize('vs-upload-image.button.configure'),
-                localize('vs-upload-image.button.cancel')
-            );
-            
-            if (result === localize('vs-upload-image.button.configure')) {
-                vscode.commands.executeCommand('workbench.action.openSettings', 'vs-upload-image');
+        
+        await vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: localize('command.runFolder'),
+            cancellable: false
+        }, async (progress) => {
+            for (let i = 0; i < files.length; i++) {
+                await executeCommand(files[i].fsPath, progress, i + 1, files.length);
             }
-            return;
-        }
-
-        await uploadFolderImages(uri);
-    });
-
-    // 将命令添加到插件上下文的订阅中
-    context.subscriptions.push(showLogCommand);
-    context.subscriptions.push(uploadCommand);
-    context.subscriptions.push(uploadFolderCommand);
+            showNotification(localize('info.success'), 'info');
+        });
+    } catch (error) {
+        showNotification(localize('error.scriptError', error.message), 'error');
+    }
 }
 
 /**
- * 插件停用函数
- * 当插件被停用时，这个函数会被调用
- * 用于清理资源
+ * 显示日志
+ */
+async function showLog() {
+    if (!fs.existsSync(LOG_FILE)) {
+        showNotification(localize('info.noLogFile'), 'warning');
+        return;
+    }
+    
+    const doc = await vscode.workspace.openTextDocument(LOG_FILE);
+    await vscode.window.showTextDocument(doc);
+}
+
+/**
+ * 激活插件
+ * @param {vscode.ExtensionContext} context 插件上下文
+ */
+function activate(context) {
+    // 注册命令
+    context.subscriptions.push(
+        vscode.commands.registerCommand('context-runner.run', runSingle),
+        vscode.commands.registerCommand('context-runner.runFolder', runFolder),
+        vscode.commands.registerCommand('context-runner.showLog', showLog)
+    );
+}
+
+/**
+ * 停用插件
  */
 function deactivate() {}
 
-// 导出插件的激活和停用函数
 module.exports = {
     activate,
     deactivate
-}
+};

@@ -1,57 +1,160 @@
-# VS Upload Image
+# Context Runner
 
-一个用于快速上传图片的 VS Code 插件。支持单个图片上传和文件夹批量上传，带进度显示和国际化支持。
+一个强大的 VS Code 插件，让你可以通过右键菜单快速执行自定义脚本或命令。支持进度显示、国际化，并提供详细的执行日志。
 
 ## 功能特点
 
-- 🖼️ 支持单个图片上传
-- 📁 支持文件夹批量上传
-- 📊 实时上传进度显示
+- 🚀 通过右键菜单快速执行命令
+- 📁 支持文件和文件夹操作
+- 📊 实时执行进度显示
 - 🌐 支持中英文界面
-- 🛠️ 支持自定义上传命令或脚本
-- 📝 详细的上传日志
+- 🛠️ 支持自定义命令或脚本
+- 📝 详细的执行日志
 
 ## 安装
 
-1. 在 VS Code 中打开扩展面板 (Ctrl+Shift+X)
-2. 搜索 "VS Upload Image"
+1. 在 VS Code 中打开扩展面板 (Ctrl+Shift+P)
+2. 搜索 "Context Runner"
 3. 点击 "Install" 安装插件
 
 ## 使用方法
 
 ### 配置
 
-在使用插件之前，需要先配置上传方式。有两种配置方式：
+在使用插件之前，需要先配置执行方式。有两种配置方式：
 
-1. 使用上传脚本：
+1. 使用脚本：
    ```json
    {
-     "vs-upload-image.scriptPath": "/path/to/your/upload.sh"
+     "context-runner.scriptPath": "/path/to/your/script.sh"
    }
    ```
 
 2. 使用自定义命令：
    ```json
    {
-     "vs-upload-image.uploadCommand": "your-upload-command {imagePath}"
+     "context-runner.command": "your-command {filePath}"
    }
    ```
 
-注意：命令中的 `{imagePath}` 会被替换为实际的图片路径。
+注意：命令中的 `{filePath}` 会被替换为实际的文件路径。
 
-### 使用
+### 使用示例
 
-1. 上传单个图片：
-   - 在文件资源管理器中右键点击图片文件
-   - 选择 "上传图片"
+#### 示例 1：图片处理和上传
 
-2. 上传文件夹中的所有图片：
-   - 在文件资源管理器中右键点击文件夹
-   - 选择 "上传所有图片"
+1. 首先在 `.zshrc` 中定义命令：
+   ```bash
+   # 将图片转换为 webp
+   webp() {
+     ffmpeg -i "$1" -c:v libwebp -q:v 65 "$2"
+     echo "convert" "$1" 'to' "$2"
+   }
 
-3. 查看上传日志：
-   - 通过命令面板 (Ctrl+Shift+P)
-   - 输入 "Show Upload Log"
+   # 转换并上传
+   webpp() {
+     # 输入参数 $1
+     local input="$1"
+     # 自动生成输出文件路径，替换扩展名为 .webp
+     local output="${input%.*}.webp"
+     # 调用 webp 函数进行转换
+     webp "$input" "$output"
+     # 使用 picgo 上传生成的 .webp 文件
+     local upload_output=$(picgo upload "$output")
+     echo "upload" "$output"
+     # 提取上传返回的 URL
+     local url=$(echo "$upload_output" | sed -n 's/.*\(https:\/\/.*\)/\1/p')
+     # 如果 URL 不为空，复制到剪贴板
+     if [[ -n $url ]]; then
+       echo "$url" | pbcopy
+       echo "URL has been copied to clipboard"
+     else
+       echo "Error: No URL found in the upload output"
+     fi
+   }
+   ```
+
+2. 在 VS Code 设置中配置命令：
+   ```json
+   {
+     "context-runner.command": "webpp {filePath}"
+   }
+   ```
+
+3. 使用效果：
+   - 右键点击图片，选择"执行命令"
+   - 插件会调用 `webpp` 命令
+   - 命令会自动：
+     1. 将图片转换为 WebP 格式
+     2. 使用 PicGo 上传图片
+     3. 将图片 URL 复制到剪贴板
+
+#### 示例 2：使用通用脚本
+
+1. 创建脚本 `process.sh`：
+   ```bash
+   #!/bin/bash
+   
+   # 检查参数
+   if [ -z "$1" ]; then
+     echo "Usage: $0 <file_path>"
+     exit 1
+   fi
+   
+   # 获取文件路径
+   FILE_PATH="$1"
+   
+   # 根据文件类型执行不同操作
+   case "${FILE_PATH##*.}" in
+     jpg|jpeg|png|gif)
+       # 处理图片
+       process_image "$FILE_PATH"
+       ;;
+     md|txt)
+       # 处理文本
+       process_text "$FILE_PATH"
+       ;;
+     *)
+       echo "Unsupported file type"
+       exit 1
+       ;;
+   esac
+   ```
+
+2. 在 VS Code 设置中配置脚本路径：
+   ```json
+   {
+     "context-runner.scriptPath": "/path/to/process.sh"
+   }
+   ```
+
+#### 示例 3：批量处理
+
+1. 在 VS Code 设置中配置（使用任意一种方式）
+2. 在资源管理器中右键点击文件夹
+3. 选择"执行命令"
+4. 插件会：
+   - 递归处理所有文件
+   - 显示总体执行进度
+   - 逐个处理每个文件
+   - 完成后显示成功通知
+
+### 使用建议
+
+1. **命令设计**：
+   - 命令应该是幂等的
+   - 添加适当的错误处理
+   - 提供清晰的输出信息
+
+2. **批量处理**：
+   - 处理大量文件时建议使用文件夹模式
+   - 可以在脚本中添加错误重试机制
+   - 建议添加文件类型检查
+
+3. **输出处理**：
+   - 建议命令输出有意义的信息
+   - 可以利用剪贴板集成
+   - 考虑添加通知或提示
 
 ## 开发指南
 
@@ -60,7 +163,7 @@
 ### 项目结构
 
 ```
-vs-upload-image/
+context-runner/
 ├── package.json           # 插件配置文件
 ├── package.nls.json      # 英文语言包
 ├── package.nls.zh-cn.json # 中文语言包
@@ -82,7 +185,7 @@ vs-upload-image/
 2. **extension.js**
    - 插件的主要逻辑
    - 包含所有命令的实现
-   - 处理文件上传和进度显示
+   - 处理文件操作和进度显示
    - 实现国际化支持
 
 3. **语言包文件**
@@ -130,35 +233,35 @@ vs-upload-image/
    - 在语言包文件中添加新的字符串
 
 4. **性能优化**
-   - 使用异步操作处理文件上传
-   - 批量上传时显示整体进度
+   - 使用异步操作处理文件
+   - 批量处理时显示整体进度
    - 通知提示自动关闭
 
 ### 调试技巧
 
 1. **输出面板**
    - 使用 `console.log` 进行调试
-   - 在输出面板选择 "VS Upload Image" 查看日志
+   - 在输出面板选择 "Context Runner" 查看日志
 
 2. **断点调试**
    - 在代码中设置断点
    - 使用 VS Code 的调试控制台
 
 3. **日志文件**
-   - 查看 `~/.vs-upload-image/upload.log` 文件
+   - 查看 `~/.context-runner/run.log` 文件
    - 包含详细的操作记录和错误信息
 
 ## 常见问题
 
-1. **找不到上传命令**
+1. **找不到命令**
    - 检查 PATH 环境变量
    - 确保命令在终端中可用
    - 检查 .zshrc 配置
 
-2. **上传失败**
-   - 查看上传日志获取详细错误信息
-   - 确认网络连接正常
-   - 验证上传脚本权限
+2. **执行失败**
+   - 查看执行日志获取详细错误信息
+   - 确认文件权限正确
+   - 验证脚本权限
 
 3. **进度条不显示**
    - 确认使用了最新版本的 VS Code

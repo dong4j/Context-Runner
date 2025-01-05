@@ -1,7 +1,7 @@
 {
-  "name": "vs-upload-image",
-  "displayName": "VS Upload Image",
-  "description": "Upload images via context menu",
+  "name": "context-runner",
+  "displayName": "Context Runner",
+  "description": "Run custom scripts or commands from context menu with progress and notifications",
   "version": "0.0.1",
   "publisher": "dong4j",
   "license": "MIT",
