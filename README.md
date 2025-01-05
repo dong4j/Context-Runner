@@ -162,6 +162,102 @@
    - 可以利用剪贴板集成
    - 考虑添加通知或提示
 
+## VS Code Extension Configuration
+
+The extension configuration in `package.json` contains several important sections that define how the extension works:
+
+### Commands (`contributes.commands`)
+
+Defines the commands that can be executed by users:
+
+```json
+{
+    "command": "context-runner.run",         // Command ID
+    "title": "%context-runner.command.run%", // Display name (supports i18n)
+    "icon": "$(run)"                        // Icon in UI
+}
+```
+
+### Menus (`contributes.menus`)
+
+Specifies where commands appear in VS Code's UI:
+
+- `explorer/context`: Right-click menu in file explorer
+  - `context-runner.run`: Shows for files
+  - `context-runner.runFolder`: Shows for folders
+- `commandPalette`: Command palette (Cmd/Ctrl+Shift+P)
+  - Commands are conditionally shown based on resource type
+
+```json
+{
+    "when": "resourceScheme == file",     // Show only for files
+    "command": "context-runner.run",      // Command to execute
+    "group": "navigation"                 // Menu group
+}
+```
+
+### Configuration (`contributes.configuration`)
+
+User-configurable settings:
+
+```json
+{
+    "context-runner.scriptPath": {
+        "type": "string",
+        "default": "",
+        "markdownDescription": "..."      // Description (supports i18n)
+    }
+}
+```
+
+Available settings:
+- `scriptPath`: Script file to execute (takes precedence over command)
+- `command`: Shell command to run when no script is configured
+- `logEnabled`: Enable/disable logging
+- `logLevel`: Set log detail level (error/warn/info/debug)
+
+### Activation Events (`activationEvents`)
+
+Specifies when the extension should be activated:
+
+```json
+"activationEvents": [
+    "onCommand:context-runner.run",       // Activate when command is invoked
+    "onCommand:context-runner.runFolder",
+    "onCommand:context-runner.showLog"
+]
+```
+
+### Language Support (`l10n`)
+
+Internationalization files:
+- `package.nls.json`: English strings
+- `package.nls.zh-cn.json`: Chinese strings
+
+Use `%key%` in package.json to reference localized strings.
+
+### Icons and UI (`icon`, `badges`)
+
+- `icon`: Extension icon in marketplace
+- `badges`: Marketplace badges (build status, version, etc.)
+
+### Development Settings
+
+For extension development:
+- `engines.vscode`: Compatible VS Code version
+- `scripts`: NPM scripts for packaging and publishing
+- `devDependencies`: Development tools and type definitions
+
+### Best Practices
+
+1. Use semantic versioning for `version`
+2. Keep dependencies minimal
+3. Use clear, descriptive command names
+4. Provide meaningful command categories
+5. Include detailed configuration descriptions
+6. Support multiple languages through l10n
+7. Follow VS Code's UI/UX guidelines
+
 ## 开发指南
 
 如果你想参与开发或者基于此插件进行二次开发，以下是一些重要信息：
