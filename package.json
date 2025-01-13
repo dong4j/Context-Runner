@@ -1,7 +1,7 @@
 {
   "name": "context-runner",
   "displayName": "Context Runner",
-  "description": "Run custom scripts or commands from context menu with progress and notifications",
+  "description": "Run custom scripts from context menu with notifications",
   "version": "0.2.0",
   "publisher": "dong4j",
   "license": "MIT",
@@ -19,7 +19,6 @@
   },
   "keywords": [
     "context menu",
-    "command",
     "script",
     "runner",
     "execute"
@@ -40,8 +39,7 @@
     "@vscode/vsce": "^2.22.0",
     "eslint": "^8.54.0",
     "glob": "^10.3.10",
-    "mocha": "^10.2.0",
-    "typescript": "^5.3.2"
+    "mocha": "^10.2.0"
   },
   "categories": [
     "Other"
@@ -57,11 +55,6 @@
         "icon": "$(run)"
       },
       {
-        "command": "context-runner.runFolder",
-        "title": "%context-runner.command.runFolder%",
-        "icon": "$(run-folder)"
-      },
-      {
         "command": "context-runner.showLog",
         "title": "%context-runner.command.showLog%",
         "icon": "$(output)"
@@ -70,24 +63,13 @@
     "menus": {
       "explorer/context": [
         {
-          "when": "resourceScheme == file",
           "command": "context-runner.run",
-          "group": "navigation"
-        },
-        {
-          "when": "explorerResourceIsFolder",
-          "command": "context-runner.runFolder",
           "group": "navigation"
         }
       ],
       "commandPalette": [
         {
-          "command": "context-runner.run",
-          "when": "resourceScheme == file"
-        },
-        {
-          "command": "context-runner.runFolder",
-          "when": "explorerResourceIsFolder"
+          "command": "context-runner.run"
         },
         {
           "command": "context-runner.showLog"
@@ -103,29 +85,18 @@
           "markdownDescription": "%context-runner.config.scriptPath%",
           "order": 1
         },
-        "context-runner.command": {
-          "type": "string",
-          "default": "",
-          "markdownDescription": "%context-runner.config.command%",
-          "order": 2
-        },
         "context-runner.logEnabled": {
           "type": "boolean",
           "default": true,
           "markdownDescription": "%context-runner.config.logEnabled%",
-          "order": 3
+          "order": 2
         },
         "context-runner.logLevel": {
           "type": "string",
           "default": "info",
-          "enum": [
-            "error",
-            "warn",
-            "info",
-            "debug"
-          ],
+          "enum": ["error", "warn", "info", "debug"],
           "markdownDescription": "%context-runner.config.logLevel%",
-          "order": 4
+          "order": 3
         }
       }
     }

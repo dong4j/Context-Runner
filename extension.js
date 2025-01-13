@@ -53,32 +53,17 @@ try {
  * 显示通知消息
  * @param {string} message 消息内容
  * @param {string} type 消息类型：'info', 'warning', 'error'
- * @param {number} [timeout=3000] 自动关闭时间（毫秒）
- * @example
- * showNotification('命令执行成功', 'info');
- * showNotification('执行失败：文件不存在', 'error');
  */
-function showNotification(message, type, timeout = 3000) {
-    let notification;
+function showNotification(message, type) {
     switch (type) {
         case 'info':
-            notification = vscode.window.showInformationMessage(message);
-            break;
+            return vscode.window.showInformationMessage(message);
         case 'warning':
-            notification = vscode.window.showWarningMessage(message);
-            break;
+            return vscode.window.showWarningMessage(message);
         case 'error':
-            notification = vscode.window.showErrorMessage(message);
-            break;
+            return vscode.window.showErrorMessage(message);
         default:
-            notification = vscode.window.showInformationMessage(message);
-    }
-    
-    // 自动关闭通知
-    if (timeout > 0) {
-        setTimeout(() => {
-            notification.dispose();
-        }, timeout);
+            return vscode.window.showInformationMessage(message);
     }
 }
 
@@ -164,20 +149,16 @@ async function getEnvironmentVariables() {
 /**
  * 执行命令
  * @param {string} filePath 文件路径
- * @param {vscode.Progress} progress 进度对象
- * @param {number} [current] 当前进度
- * @param {number} [total] 总数
  * @returns {Promise<void>}
  */
-async function executeCommand(filePath, progress, current, total) {
-    console.log('executeCommand called with:', { filePath, current, total });
+async function executeCommand(filePath) {
+    console.log('executeCommand called with:', { filePath });
     
     const config = vscode.workspace.getConfiguration('context-runner');
     const scriptPath = config.get('scriptPath');
-    const command = config.get('command');
     
-    if (!scriptPath && !command) {
-        console.error('No script or command configured');
+    if (!scriptPath) {
+        console.error('No script configured');
         showNotification(localize('error.noConfig'), 'error');
         return;
     }
@@ -187,50 +168,39 @@ async function executeCommand(filePath, progress, current, total) {
     console.log('Environment variables loaded');
 
     // 准备执行的命令
-    let cmd;
-    if (scriptPath) {
-        cmd = `"${scriptPath}" "${filePath}"`;
-    } else {
-        if (command.includes('{filePath}')) {
-            cmd = command.replace('{filePath}', `"${filePath}"`);
-        } else {
-            cmd = `${command} "${filePath}"`;
-        }
-    }
+    const cmd = `"${scriptPath}" "${filePath}"`;
     
     console.log('Prepared command:', cmd);
-    writeLog(`Executing command: ${cmd}`, 'INFO');
-    
-    // 更新进度
-    if (progress && total) {
-        const percentage = Math.round((current / total) * 100);
-        progress.report({
-            message: localize('info.progress', percentage.toString(), current.toString(), total.toString()),
-            increment: (1 / total) * 100
-        });
-    }
+    writeLog(`Executing script: ${cmd}`, 'INFO');
     
     return new Promise((resolve, reject) => {
         exec(cmd, { env }, (error, stdout, stderr) => {
             if (error) {
                 writeLog(`执行失败: ${error.message}`, 'ERROR');
                 writeLog(`错误输出: ${stderr}`, 'ERROR');
+                showNotification(localize('error.scriptError', error.message), 'error');
                 reject(error);
                 return;
+            } else {
+                if (stdout) {
+                    writeLog(`标准输出: ${stdout}`, 'INFO');
+                }
+                if (stderr) {
+                    writeLog(`错误输出: ${stderr}`, 'WARN');
+                }
+                showNotification(localize('info.success'), 'info');
+                resolve(stdout || stderr);  // 如果 stdout 为空，则返回 stderr
             }
-            
-            writeLog(`执行成功: ${stdout}`);
-            resolve(stdout);
         });
     });
 }
 
 /**
- * 处理单个文件
- * @param {vscode.Uri} uri 文件 URI
+ * 处理文件或文件夹
+ * @param {vscode.Uri} uri 文件或文件夹 URI
  */
-async function runSingle(uri) {
-    console.log('runSingle called with uri:', uri ? uri.fsPath : 'undefined');
+async function run(uri) {
+    console.log('run called with uri:', uri ? uri.fsPath : 'undefined');
     
     if (!uri) {
         console.error('No file selected');
@@ -239,63 +209,37 @@ async function runSingle(uri) {
     }
 
     try {
-        await vscode.window.withProgress({
-            location: vscode.ProgressLocation.Notification,
-            title: localize('command.run'),
-            cancellable: false
-        }, async (progress) => {
-            writeLog(`Running command for file: ${uri.fsPath}`, 'INFO');
-            await executeCommand(uri.fsPath, progress, 1, 1);
-            showNotification(localize('info.success'), 'info');
-        });
-    } catch (error) {
-        console.error('Error in runSingle:', error);
-        writeLog(`Error in runSingle: ${error.message}`, 'ERROR');
-        showNotification(localize('error.scriptError', error.message), 'error');
-    }
-}
+        // 检查是否是文件夹
+        const stats = await vscode.workspace.fs.stat(uri);
+        const isDirectory = stats.type === vscode.FileType.Directory;
 
-/**
- * 处理文件夹
- * @param {vscode.Uri} uri 文件夹 URI
- */
-async function runFolder(uri) {
-    console.log('runFolder called with uri:', uri ? uri.fsPath : 'undefined');
-    
-    if (!uri) {
-        console.error('No folder selected');
-        showNotification(localize('error.noFile'), 'error');
-        return;
-    }
+        if (isDirectory) {
+            // 处理文件夹
+            const files = await vscode.workspace.findFiles(
+                new vscode.RelativePattern(uri.fsPath, '**/*'),
+                '**/node_modules/**'
+            );
 
-    try {
-        const files = await vscode.workspace.findFiles(
-            new vscode.RelativePattern(uri.fsPath, '**/*'),
-            '**/node_modules/**'
-        );
+            if (files.length === 0) {
+                console.log('No files found in folder');
+                showNotification(localize('info.noFiles'), 'warning');
+                return;
+            }
 
-        if (files.length === 0) {
-            console.log('No files found in folder');
-            showNotification(localize('info.noFiles'), 'warning');
-            return;
-        }
-
-        console.log(`Found ${files.length} files in folder`);
-        
-        await vscode.window.withProgress({
-            location: vscode.ProgressLocation.Notification,
-            title: localize('command.runFolder'),
-            cancellable: false
-        }, async (progress) => {
+            console.log(`Found ${files.length} files in folder`);
+            
             for (let i = 0; i < files.length; i++) {
                 writeLog(`Processing file ${i + 1}/${files.length}: ${files[i].fsPath}`, 'INFO');
-                await executeCommand(files[i].fsPath, progress, i + 1, files.length);
+                await executeCommand(files[i].fsPath);
             }
-            showNotification(localize('info.success'), 'info');
-        });
+        } else {
+            // 处理单个文件
+            writeLog(`Running command for file: ${uri.fsPath}`, 'INFO');
+            await executeCommand(uri.fsPath);
+        }
     } catch (error) {
-        console.error('Error in runFolder:', error);
-        writeLog(`Error in runFolder: ${error.message}`, 'ERROR');
+        console.error('Error in run:', error);
+        writeLog(`Error in run: ${error.message}`, 'ERROR');
         showNotification(localize('error.scriptError', error.message), 'error');
     }
 }
@@ -310,7 +254,6 @@ async function showLog() {
             return;
         }
 
-        // 检查文件是否可读
         try {
             await fs.promises.access(LOG_FILE, fs.constants.R_OK);
         } catch (error) {
@@ -318,7 +261,6 @@ async function showLog() {
             return;
         }
 
-        // 尝试打开日志文件
         try {
             const doc = await vscode.workspace.openTextDocument(LOG_FILE);
             await vscode.window.showTextDocument(doc, { preview: false });
@@ -335,12 +277,13 @@ async function showLog() {
  * @param {vscode.ExtensionContext} context 插件上下文
  */
 function activate(context) {
-    // 注册命令
-    context.subscriptions.push(
-        vscode.commands.registerCommand('context-runner.run', runSingle),
-        vscode.commands.registerCommand('context-runner.runFolder', runFolder),
-        vscode.commands.registerCommand('context-runner.showLog', showLog)
-    );
+    console.log('Context Runner is now active!');
+
+    let disposable = vscode.commands.registerCommand('context-runner.run', run);
+    context.subscriptions.push(disposable);
+
+    disposable = vscode.commands.registerCommand('context-runner.showLog', showLog);
+    context.subscriptions.push(disposable);
 }
 
 /**
