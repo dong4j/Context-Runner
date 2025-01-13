@@ -5,6 +5,7 @@ All notable changes to the "Context Runner" extension will be documented in this
 ## [0.1.0] - 2025-01-05
 
 ### Added
+
 - Initial release
 - Right-click menu integration for running commands
 - Support for both files and folders
